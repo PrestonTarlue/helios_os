@@ -1,6 +1,20 @@
 // HELIOS 1.0 Kernel
 // Core kernel implementation in C++
 
+// Forward declarations
+void initialize_gdt();
+void initialize_idt();
+void initialize_memory();
+void initialize_pic();
+void initialize_pit();
+void clear_screen();
+void print_string(const char* str, unsigned char color);
+void filesystem_init();
+void process_manager_init();
+void gui_init();
+void shell_init();
+void shell_run();
+
 extern "C" void kernel_main() {
     // Initialize kernel subsystems
     initialize_gdt();
@@ -110,7 +124,7 @@ struct GDTEntry {
 
 struct GDTPointer {
     unsigned short limit;
-    unsigned int base;
+    unsigned long base;
 } __attribute__((packed));
 
 GDTEntry gdt[3];
@@ -128,11 +142,11 @@ void set_gdt_entry(int num, unsigned long base, unsigned long limit, unsigned ch
     gdt[num].access = access;
 }
 
-extern "C" void gdt_flush(unsigned int);
+extern "C" void gdt_flush(unsigned long);
 
 void initialize_gdt() {
     gdt_ptr.limit = (sizeof(struct GDTEntry) * 3) - 1;
-    gdt_ptr.base = (unsigned int)&gdt;
+    gdt_ptr.base = (unsigned long)&gdt;
     
     // Null descriptor
     set_gdt_entry(0, 0, 0, 0, 0);
@@ -143,7 +157,7 @@ void initialize_gdt() {
     // Data descriptor (flat, writable)
     set_gdt_entry(2, 0, 0xFFFFFFFF, 0x92, 0xCF);
     
-    gdt_flush((unsigned int)&gdt_ptr);
+    gdt_flush((unsigned long)&gdt_ptr);
 }
 
 // ============================================================================
@@ -160,13 +174,13 @@ struct IDTEntry {
 
 struct IDTPointer {
     unsigned short limit;
-    unsigned int base;
+    unsigned long base;
 } __attribute__((packed));
 
 IDTEntry idt[256];
 IDTPointer idt_ptr;
 
-extern "C" void idt_flush(unsigned int);
+extern "C" void idt_flush(unsigned long);
 
 void set_idt_entry(unsigned char num, unsigned long base, unsigned short sel, unsigned char flags) {
     idt[num].base_lo = base & 0xFFFF;
@@ -178,14 +192,14 @@ void set_idt_entry(unsigned char num, unsigned long base, unsigned short sel, un
 
 void initialize_idt() {
     idt_ptr.limit = sizeof(IDTEntry) * 256 - 1;
-    idt_ptr.base = (unsigned int)&idt;
+    idt_ptr.base = (unsigned long)&idt;
     
     // Initialize all IDT entries
     for (int i = 0; i < 256; i++) {
         set_idt_entry(i, 0, 0x08, 0);
     }
     
-    idt_flush((unsigned int)&idt_ptr);
+    idt_flush((unsigned long)&idt_ptr);
 }
 
 // ============================================================================
