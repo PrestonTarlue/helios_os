@@ -35,7 +35,7 @@ file_system_type:   db "FAT12   "
 
 start_boot:
     ; Initialize segment registers
-    mov ax, 0x0000
+    xor ax, ax
     mov ds, ax
     mov es, ax
     mov ss, ax
